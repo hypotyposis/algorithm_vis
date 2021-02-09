@@ -1,0 +1,20 @@
+{
+  "name": "d3ex",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "dependencies": {
+    "d3-downloadable": "^2.1.0",
+    "express": "^4.17.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://e.coding.net/ac-code/algorithm_vis/d3ex.git"
+  },
+  "author": "",
+  "license": "ISC"
+}

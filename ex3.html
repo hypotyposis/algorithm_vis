@@ -1,0 +1,21 @@
+<script src="d3/d3.js", charset="utf-8"></script>
+
+<body>
+    <p></p>
+    <p></p>
+</body>
+
+
+<script>
+var persons = [{id: 1001, name:"ZhangSan"},
+    {id: 1002, name:"LiSi"}]
+var p = d3.select("body").selectAll("p");
+
+p.data(persons)
+    .each(function(d, i) {
+        d.age = 20
+    })
+    .text(function(d, i) {
+        return d.id + " " + d.name + " " + d.age;
+    })
+</script>

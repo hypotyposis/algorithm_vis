@@ -16,6 +16,14 @@ app.get('/tree/', (req, res) => {
   res.sendFile(__dirname + '/' +'tree.html')
 })
 
-app.listen(9000, () => {
-  console.log('listening on *:9000');
+app.get('/gif/', (req, res) => {
+  res.sendFile(__dirname + '/' +'gif.html')
+})
+
+app.get('/force/', (req, res) => {
+  res.sendFile(__dirname + '/' +'force.html')
+})
+
+app.listen(80, () => {
+  console.log('listening on *:80');
 });

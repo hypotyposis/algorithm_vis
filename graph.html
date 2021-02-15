@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
+<!-- <meta charset="utf-8"> -->
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <html>
 
 <head>
@@ -18,10 +19,11 @@
 </head>
 
 <body>
-    <div style="width:50%;float: left;">
+    <div style="width:30%;float: left;">
         <!-- <div style="width:50%;float: left;"> -->
-        <h3>下方输入框输入图的数据</h3>
+        <h4>下方输入框输入图的数据</h4>
         <!-- <h4>点击结点可染色</h4> -->
+        <label id="switchDirected" style="margin-bottom: 10px;display: table-cell;text-align:center;vertical-align:middle;"><input class="mui-switch mui-switch-animbg" type="checkbox">有向图</label>
         <textarea id="graphdata" type="text" rows="20" cols="30"></textarea>
         <!-- </div> -->
         <!-- <div style="width:50%;float: left;"> -->
@@ -30,25 +32,25 @@
         <button id="draw">画图</button>
         <button id="save">存为PNG</button>
         <!-- </div> -->
-        <div id="graph" style="width: 390px; height: 390px;"></div>
+    </div>
+    <div style="width:70%;float:left;">
+        <div id="graph" style="width: 400px; height: 400px;"></div>
     </div>
 </body>
 
 </html>
 
 <script>
-    // var width = 600;
-    // var height = 600;
-    // var svg = d3.select("#graph")
-    //     .append("svg")
-    //     .attr("width",width)
-    //     .attr("height",height);
+    var isdirected = false;
 
-    // var marge = {top:10,bottom:10,left:10,right:10}
-
-    // var g = svg.append("g")
-    //     .attr("transform","translate("+marge.top+","+marge.left+")");
-
+    const switchDirected = d3.select("#switchDirected")
+        .on("click", () => {
+            if(!isdirected)
+                isdirected = true;
+            else
+                isdirected = false;
+            console.log("isdirected: ", isdirected);
+        })
     // 准备数据
     var nodes = [//节点集
         { name: "1", group: 2 },
@@ -72,15 +74,11 @@
         .domain(d3.range(nodes.length))
         .range(d3.schemeCategory10);
 
-
-    console.log(nodes);
-    console.log(edges);
-
-    draw();
+    // draw();
 
     function draw() {
-        var width = 600;
-        var height = 600;
+        var width = 550;
+        var height = 550;
         var svg = d3.select("#graph")
             .append("svg")
             .attr("width", width)
@@ -91,6 +89,7 @@
         var g = svg.append("g")
         // .attr("transform","translate("+marge.top+","+marge.left+")");
 
+        //为边添加箭头
         var defs = svg.append("defs");
 
         var arrowMarker = defs.append("marker")
@@ -110,31 +109,15 @@
             .attr("fill", "#000");
 
 
-        // var arrowMarker = defs.append("marker")
-        //                 .attr("id","arrow")
-        //                 .attr("markerUnits","strokeWidth")
-        //                 .attr("markerWidth","12")
-        //                 .attr("markerHeight","12")
-        //                 .attr("viewBox","0 0 12 12") 
-        //                 .attr("refX","6")
-        //                 .attr("refY","6")
-        //                 .attr("orient","auto");
-
-        // var defs = svg.append("defs");
-
-        // var arrow_path = "M2,2 L10,6 L2,10 L6,6 L2,2";
-
-        // arrowMarker.append("path")
-        //             .attr("d",arrow_path)
-        //             .attr("fill","#000");
-
+        console.log("nodes before: ", nodes);
+        console.log("edges before: ", edges);
         var forceSimulation = d3.forceSimulation()
             .force("link", d3.forceLink())
             .force("charge", d3.forceManyBody())
             .force("center", d3.forceCenter());
         //生成节点数据
-        console.log(nodes);
-        console.log(edges);
+        // console.log("nodes before: ", nodes);
+        // console.log("edges before: ", edges);
         forceSimulation.nodes(nodes)
             .on("tick", ticked);//这个函数很重要，后面给出具体实现和说明
         //生成边数据
@@ -148,8 +131,8 @@
             .x(width / 2)
             .y(height / 2);
         //在浏览器的控制台输出
-        console.log(nodes);
-        console.log(edges);
+        console.log("nodes after: ", nodes);
+        console.log("edges after: ", edges);
         //绘制边
         var links = g.append("g")
             .selectAll("line")
@@ -291,46 +274,12 @@
             d.fy = null;
         }
     };
-    // function ticked(){
-    //     links
-    //         .attr("x1",function(d){return d.source.x;})
-    //         .attr("y1",function(d){return d.source.y;})
-    //         .attr("x2",function(d){return d.target.x;})
-    //         .attr("y2",function(d){return d.target.y;});
-
-    //     linksText
-    //         .attr("x",function(d){
-    //             return (d.source.x+d.target.x)/2;
-    //         })
-    //         .attr("y",function(d){
-    //             return (d.source.y+d.target.y)/2;
-    //         });
-
-    //     gs
-    //         .attr("transform",function(d) { return "translate(" + d.x + "," + d.y + ")"; });
-    // }
-    // //drag
-    // function started(d){
-    //     if(!d3.event.active){
-    //         forceSimulation.alphaTarget(0.5).restart();//设置衰减系数，对节点位置移动过程的模拟，数值越高移动越快，数值范围[0，1]
-    //     }
-    //     d.fx = d.x;
-    //     d.fy = d.y;
-    // }
-    // function dragged(d){
-    //     d.fx = d3.event.x;
-    //     d.fy = d3.event.y;
-    // }
-    // function ended(d){
-    //     if(!d3.event.active){
-    //         forceSimulation.alphaTarget(0);
-    //     }
-    //     d.fx = null;
-    //     d.fy = null;
-    // }
 
     const btn = d3.select("#draw")
         .on("click", () => {
+            console.log(nodes)
+            console.log(edges)
+            draw();
             var graphdata = d3.select("#graphdata").property("value").split("\n");
             // var valuedata = d3.select("#valuedata").property("value").split(" ");
             let N = graphdata.shift(); //取节点数
@@ -354,15 +303,73 @@
             //import edges data
             edges = [];
             for (var i = 0; i < graphdata.length; i++) {
-                edges.push({ source: parseInt(graphdata[i][0]), target: parseInt(graphdata[i][1]) });
+                edges.push({ source: parseInt(graphdata[i][0]), target: parseInt(graphdata[i][1]), value: 2 });
             }
             console.log("graphdata: ", graphdata);
             console.log("nodes: ", nodes);
             console.log("edges: ", edges);
-            window.nodes = nodes;
-            window.edges = edges;
-            console.log("window.nodes: ", window.nodes);
-            console.log("window.edges; ", window.edges);
             draw();
         })
 </script>
+
+<style>
+.mui-switch {
+  width: 52px;
+  height: 31px;
+  position: relative;
+  border: 1px solid #dfdfdf;
+  background-color: #fdfdfd;
+  box-shadow: #dfdfdf 0 0 0 0 inset;
+  border-radius: 20px;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  background-clip: content-box;
+  display: inline-block;
+  -webkit-appearance: none;
+  user-select: none;
+  outline: none; }
+  .mui-switch:before {
+    content: '';
+    width: 29px;
+    height: 29px;
+    position: absolute;
+    top: 0px;
+    left: 0;
+    border-radius: 20px;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+  .mui-switch:checked {
+    border-color: #64bd63;
+    box-shadow: #64bd63 0 0 0 16px inset;
+    background-color: #64bd63; }
+    .mui-switch:checked:before {
+      left: 21px; }
+  .mui-switch.mui-switch-animbg {
+    transition: background-color ease 0.4s; }
+    .mui-switch.mui-switch-animbg:before {
+      transition: left 0.3s; }
+    .mui-switch.mui-switch-animbg:checked {
+      box-shadow: #dfdfdf 0 0 0 0 inset;
+      background-color: #64bd63;
+      transition: border-color 0.4s, background-color ease 0.4s; }
+      .mui-switch.mui-switch-animbg:checked:before {
+        transition: left 0.3s; }
+  .mui-switch.mui-switch-anim {
+    transition: border cubic-bezier(0, 0, 0, 1) 0.4s, box-shadow cubic-bezier(0, 0, 0, 1) 0.4s; }
+    .mui-switch.mui-switch-anim:before {
+      transition: left 0.3s; }
+    .mui-switch.mui-switch-anim:checked {
+      box-shadow: #64bd63 0 0 0 16px inset;
+      background-color: #64bd63;
+      transition: border ease 0.4s, box-shadow ease 0.4s, background-color ease 1.2s; }
+      .mui-switch.mui-switch-anim:checked:before {
+        transition: left 0.3s; }
+ 
+/*# sourceMappingURL=mui-switch.css.map */
+</style>

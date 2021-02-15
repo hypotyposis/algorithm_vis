@@ -13,46 +13,31 @@
 
 
 <body>
-    <div style="width:50%;float: left;">
+    <div style="width:40%; height:100%; float: left;">
     <!-- <div style="width:50%;float: left;"> -->
-        <h1>Welcome!</h1>
         <h3>下方输入框输入树的数据</h3>
         <h4>点击结点可染色</h4>
         <textarea id="treedata" type="text" rows="12" cols="30"></textarea>
     <!-- </div> -->
     <!-- <div style="width:50%;float: left;"> -->
         <h3>下方输入框输入值的数据</h3>
-        <textarea id="valuedata" type="text" rows="12" cols="30"></textarea>
+        <textarea id="valuedata" type="text" rows="5" cols="30"></textarea>
         <button id="draw">画树</button>
         <button id="save">存为PNG</button>
     <!-- </div> -->
-        <div id="treemap" style="width: 390px; height: 390px;"></div>
     </div>
-    <div style="width:50%;float: left;">
-        <!-- <img width=200px height=200px src="" id='uploadPreview'> -->
-        <!-- <canvas width='400' height='300' id='canvas'></canvas> -->
-        <div id="img_list" style="width: 600px;height:150px;"></div>
-        <div>
-            <label class="fileLabel" for="file">选择图片</label>
-            <input type='file' style="display: none" id="file" multiple="multiple">
-        </div>
-        <div>
-            <label style='color:rgb(41, 34, 34)'>Enter Interval</label>
-            <input type='interval' id='interval'>
-        </div>
-        <button onclick="generateGIF()">生成GIF</button>
-        <!-- <button onclick="downloadGIF()" id="downloadGIF">下载GIF</button> -->
-        <img width=200px height=200px src='' id='output'>
+    <div style="width:60%;float: left;">
+        <div id="treemap" style="width: 400px; height: 400px;"></div>
     </div>
 </body>
 </html>
 
 <script>
-var treesize = 270;
+var treesize = 180;
 // 定义d3建树参数
 tree = data => {
   const root = d3.hierarchy(data);
-  return d3.tree().size([treesize, treesize])
+  return d3.tree().size([treesize, 0.7 * treesize])
     .separation((a, b) => {
         return a.parent == b.parent ? 0.1 : 0.1;
     })
@@ -61,11 +46,24 @@ tree = data => {
 
 function redraw(hierarchy_data) {
     console.log("hierarchy_data:", hierarchy_data)
+    var max_depth = function(hierarchy_data) {
+        if (!hierarchy_data.children)
+            return 1;
+        return Math.max(max_depth(hierarchy_data.children[0]), max_depth(hierarchy_data.children[1])) + 1;
+    };
+    var levels = max_depth(hierarchy_data)
+    console.log("max_depth: ", max_depth(hierarchy_data))
+    console.log("treesize: ", treesize)
+    treesize = 72 * levels;
+    console.log("treesize: ", treesize)
     if (!d3.select("#treesvg").empty()) {
         d3.select("#treesvg").remove()
     }
     const root = tree(hierarchy_data);
     var dotRadius = 19; // 圆大小
+    // console.log(document.getElementById("treemap").style.height)
+    // document.getElementById("treemap").style.width = 400/levels + "px";
+    // document.getElementById("treemap").style.height = 400/levels + "px";
     const svg = d3.select("#treemap").append("svg")
     .attr("width", "100%")
     .attr("height", "100%")
@@ -109,7 +107,13 @@ function redraw(hierarchy_data) {
             return d.y+70;
         })
         .attr("r", dotRadius)
-        .style("fill", "white")
+        .style("fill", (d) => {
+            if (d.data.id == -1) //
+                return "transparent"
+                // return "blue"
+            else 
+                return "pink"
+        })
         // .style("stroke", "black")
         .style("stroke", (d) => {
             console.log(d)
@@ -153,9 +157,9 @@ const btn = d3.select("#draw")
         var treedata = d3.select("#treedata").property("value").split("\n");
         // treedata.pop();
         var valuedata = d3.select("#valuedata").property("value").split(" ");
-        for (var i = 0; i < valuedata.length; i++) {
-            valuedata[i] = parseInt(valuedata[i])
-        }
+        // for (var i = 0; i < valuedata.length; i++) {
+        //     valuedata[i] = parseInt(valuedata[i])
+        // }
 
         console.log(valuedata[0])
         var linkdata = [{
@@ -220,66 +224,6 @@ const btn = d3.select("#draw")
         });
         redraw(treeroot)
     })
-
-    let gifData;
-    let fileInput = document.getElementById('file');
-    fileInput.onchange = function(){
-        if (this.files.length === 0) { return; }
-
-        // let oFile = this.files[0];
-        console.log(this.files)
-        const rFilter = /^(?:image\/bmp|image\/webp|image\/cis\-cod|image\/gif|image\/ief|image\/jpeg|image\/jpeg|image\/jpeg|image\/pipeg|image\/png|image\/svg\+xml|image\/tiff|image\/x\-cmu\-raster|image\/x\-cmx|image\/x\-icon|image\/x\-portable\-anymap|image\/x\-portable\-bitmap|image\/x\-portable\-graymap|image\/x\-portable\-pixmap|image\/x\-rgb|image\/x\-xbitmap|image\/x\-xpixmap|image\/x\-xwindowdump)$/i;
-        for (var i = 0; i < this.files.length; i++) {
-            console.log(this.files[i]);
-            console.log(this.files[i].type);
-            if (!rFilter.test(this.files[i].type)) { 
-                alert("You must select a valid image file!"); return; 
-            }
-            let oFReader = new FileReader();
-            oFReader.readAsDataURL(this.files[i]);
-            oFReader.onload = function (oFREvent) {
-                // let uploadImg = document.getElementById("uploadPreview");
-                // console.log(oFREvent.target.result);
-                // uploadImg.src = oFREvent.target.result;
-                var parent = document.getElementById("img_list");
-                var image = document.createElement("img");
-                // image.width = 150;
-                // image.height = 150;
-                image.src = oFREvent.target.result;
-                parent.appendChild(image);
-            }
-        }
-    }
-
-    function generateGIF() {
-        console.log("Generating...");
-        var gif = new GIF({
-            workers: 2,
-            quality: 5,
-            workerScript: './gif.worker.js',
-        });
-        
-        let img_list = document.getElementById("img_list").getElementsByTagName("img");
-        console.log(img_list)
-        var arr = Array.prototype.slice.call( img_list )
-        console.log(arr);
-        arr.map(item => {
-            console.log(item)
-            gif.addFrame(item, {delay: 1000});
-        });
-
-        gif.render();
-
-        gif.on('finished', function(blob) {
-            // window.open(URL.createObjectURL(blob));
-            let url = URL.createObjectURL(blob)
-            console.log(url)
-            gifData = blob
-            console.log(blob)
-            document.getElementById("output").src = url
-        });
-        // gif.render();
-    }
 
 </script>
 

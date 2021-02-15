@@ -5,4 +5,5 @@ WORKDIR /app
 
 RUN npm install express --save
 
-CMD node /app/app.js
+# CMD ["node", "/app/app.js"]
+ENTRYPOINT ["sh", "/app/entrypoint.sh"]

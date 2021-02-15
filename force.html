@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<!-- <meta charset="utf-8"> -->
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script> -->
+    <!-- <script src="d3/d3.js", charset="utf-8"></script> -->
+    <script type="text/javascript" src="http://d3js.org/d3.v5.min.js"></script>
+    <script src="save-png.js"></script>
+    <script src='./gif.js'></script>
+    <script src="https://d3js.org/d3-dispatch.v2.min.js"></script>
+    <script src="https://d3js.org/d3-quadtree.v2.min.js"></script>
+    <script src="https://d3js.org/d3-timer.v2.min.js"></script>
+    <script src="https://d3js.org/d3-force.v2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
+    <title>graph</title>
+</head>
+
+<body>
+    <div style="width:30%;float: left;">
+        <!-- <div style="width:50%;float: left;"> -->
+        <h4>下方输入框输入图的数据</h4>
+        <!-- <h4>点击结点可染色</h4> -->
+        <label id="switchDirected" style="margin-bottom: 10px;display: table-cell;text-align:center;vertical-align:middle;"><input class="mui-switch mui-switch-animbg" type="checkbox">有向图</label>
+        <textarea id="graphdata" type="text" rows="20" cols="30"></textarea>
+        <!-- </div> -->
+        <!-- <div style="width:50%;float: left;"> -->
+        <!-- <h3>下方输入框输入值的数据</h3> -->
+        <!-- <textarea id="valuedata" type="text" rows="12" cols="30"></textarea> -->
+        <button id="draw">画图</button>
+        <button id="save">存为PNG</button>
+        <!-- </div> -->
+    </div>
+    <div style="width:70%;float:left;">
+        <div id="graph" style="width: 400px; height: 400px;"></div>
+    </div>
+</body>
+
+</html>
+
+<script>
+    var isdirected = false;
+
+    const switchDirected = d3.select("#switchDirected")
+        .on("click", () => {
+            if(!isdirected)
+                isdirected = true;
+            else
+                isdirected = false;
+            console.log("isdirected: ", isdirected);
+        })
+    // 准备数据
+    var nodes = [//节点集
+        { name: "1", group: 2 },
+        { name: "2", group: 2 },
+        { name: "3", group: 2 },
+        { name: "4", group: 2 },
+        { name: "5", group: 2 },
+        { name: "6", group: 2 },
+    ];
+    var edges = [//边集
+        { source: 0, target: 1, value: 2 },  //value控制线的长短
+        { source: 1, target: 0, value: 2 },
+        { source: 0, target: 2, value: 2 },
+        { source: 2, target: 3, value: 2 },
+        { source: 3, target: 4, value: 2 },
+        { source: 0, target: 5, value: 2 },
+    ];
+
+    //设置一个color的颜色比例尺，为了让不同的扇形呈现不同的颜色
+    var colorScale = d3.scaleOrdinal()
+        .domain(d3.range(nodes.length))
+        .range(d3.schemeCategory10);
+
+    var width = 550;
+    var height = 550;
+    var svg = d3.select("#graph")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    var marge = { top: 10, bottom: 10, left: 10, right: 10 }
+
+    var g = svg.append("g")
+    // .attr("transform","translate("+marge.top+","+marge.left+")");
+
+    //为边添加箭头
+    var defs = svg.append("defs");
+
+    var arrowMarker = defs.append("marker")
+        .attr("id", "arrow")
+        .attr("markerUnits", "strokeWidth")
+        .attr("markerWidth", "8")
+        .attr("markerHeight", "8")
+        .attr("viewBox", "0 0 8 8")
+        .attr("refX", "19.5")
+        .attr("refY", "4")
+        .attr("orient", "auto");
+
+    var arrow_path = "M0,0 L8,4 L0,8 L0,0";
+
+    arrowMarker.append("path")
+        .attr("d", arrow_path)
+        .attr("fill", "#000");
+
+
+    console.log("nodes before: ", nodes);
+    console.log("edges before: ", edges);
+    var forceSimulation = d3.forceSimulation()
+        .force("link", d3.forceLink())
+        .force("charge", d3.forceManyBody())
+        .force("center", d3.forceCenter());
+    //生成节点数据
+    // console.log("nodes before: ", nodes);
+    // console.log("edges before: ", edges);
+    forceSimulation.nodes(nodes)
+        .on("tick", ticked);//这个函数很重要，后面给出具体实现和说明
+    //生成边数据
+    forceSimulation.force("link")
+        .links(edges)
+        .distance(function (d) {//每一边的长度
+            return d.value * 100;
+        })
+    //设置图形的中心位置
+    forceSimulation.force("center")
+        .x(width / 2)
+        .y(height / 2);
+    //在浏览器的控制台输出
+    console.log("nodes after: ", nodes);
+    console.log("edges after: ", edges);
+    //绘制边
+    var links = g.append("g")
+        .selectAll("line")
+        .data(edges)
+        .enter()
+        .append("line")
+        .attr("marker-end", "url(#arrow)")
+        .attr("stroke", function (d, i) {
+            // return colorScale(d.value);   //边的颜色
+            return "black"
+        })
+        .attr("stroke-width", 2)
+        .on("click", function () { // 这里不能写箭头函数!this指向会出问题
+            var cur_color = d3.select(this).attr("stroke")
+            if (cur_color == "black")
+                d3.select(this).attr("stroke", "transparent");
+            else
+                d3.select(this).attr("stroke", "black")
+            var marker_end = d3.select(this).attr("marker-end");
+            if (marker_end)
+                d3.select(this).attr("marker-end", "");
+            else
+                d3.select(this).attr("marker-end", "url(#arrow)");
+        })
+    // .attr("marker-end","url(#arrow)");
+
+    //边上文字
+    var linksText = g.append("g")
+        .selectAll("text")
+        .data(edges)
+        .enter()
+        .append("text")
+        .text(function (d) {
+            return d.relation;
+        })
+    //建立用来放在每个节点和对应文字的分组<g>
+    var gs = g.selectAll(".circleText")
+        .data(nodes)
+        .enter()
+        .append("g")
+        // .attr("transform",function(d,i){
+        //     var cirX = d.x;
+        //     var cirY = d.y;
+        //     return "translate("+cirX+","+cirY+")";
+        // })
+        .call(d3.drag()
+            .on("start", started)
+            .on("drag", dragged)
+            .on("end", ended)
+        );
+
+    //绘制节点
+    var circles = gs.append("circle")
+        // .attr("r",20)
+        .attr("cx", (d) => {
+            return d.x;
+        })
+        .attr("cy", (d) => {
+            return d.y;
+        })
+        .attr("r", function (d, i) {    //圆圈半径
+            return d.group * 12;
+        })
+        .attr("fill", function (d, i) {
+            //return colorScale(i);
+            // return colorScale(d.group);
+            return "pink";
+            // return "transparent";
+        })
+        .style("stroke", "black")
+        .style("stroke-width", 1.5);
+    //文字
+    var texts = gs.append("text")
+        /*.attr("x",-10)
+        .attr("y",-20)
+        .attr("dy",10)*/
+        .attr("x", (d) => {
+            return d.x;
+        })
+        .attr("y", (d) => {
+            return d.y;
+        })
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .text(function (d) {
+            return d.name;
+        })
+
+    function ticked() {
+        links
+            .attr("x1", function (d) { return d.source.x; })
+            .attr("y1", function (d) { return d.source.y; })
+            .attr("x2", function (d) {
+                return d.target.x;
+            })
+            .attr("y2", function (d) {
+                return d.target.y;
+            });
+
+        linksText
+            .attr("x", function (d) {
+                return (d.source.x + d.target.x) / 2;
+            })
+            .attr("y", function (d) {
+                return (d.source.y + d.target.y) / 2;
+            });
+        circles.attr("cx", function (d) {
+            return d.x;
+        })
+            .attr("cy", function (d) {
+                return d.y;
+            });
+        texts.attr("x", function (d) {
+            return d.x;
+        })
+            .attr("y", function (d) {
+                return d.y;
+            });
+        // gs
+        // .attr("transform",function(d) {console.log(d); return "translate(" + d.x + "," + d.y + ")"; });
+    }
+
+    function started(d) {
+        if (!d3.event.active) {
+            forceSimulation.alphaTarget(0.5).restart();//设置衰减系数，对节点位置移动过程的模拟，数值越高移动越快，数值范围[0，1]
+        }
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+    function dragged(d) {
+        d.fx = d3.event.x;
+        d.fy = d3.event.y;
+    }
+    function ended(d) {
+        if (!d3.event.active) {
+            forceSimulation.alphaTarget(0);
+        }
+        d.fx = null;
+        d.fy = null;
+    }
+
+    const btn = d3.select("#draw")
+        .on("click", () => {
+            var graphdata = d3.select("#graphdata").property("value").split("\n");
+            // var valuedata = d3.select("#valuedata").property("value").split(" ");
+            let N = graphdata.shift(); //取节点数
+            // console.log(window.nodes, window.edges);
+            nodes = [];
+            for (var i = 0; i < graphdata.length; i++) {
+                graphdata[i] = graphdata[i].split(" ");
+            }
+            console.log(graphdata);
+            if (graphdata[0].length == 1) //有节点值输入
+            {
+                for (var i = 0; i < N; i++) {
+                    nodes.push({ name: graphdata[i][0], group: 2 });
+                }
+                graphdata = graphdata.slice(N,);
+            }
+            else {
+                for (var i = 0; i < N; i++)
+                    nodes.push({ name: i + 1, group: 2 }); //1, 2, 3, 4, 5...
+            }
+            //import edges data
+            edges = [];
+            for (var i = 0; i < graphdata.length; i++) {
+                edges.push({ source: parseInt(graphdata[i][0]), target: parseInt(graphdata[i][1]), value: 1.8 });
+            }
+            console.log("graphdata: ", graphdata);
+            console.log("nodes: ", nodes);
+            console.log("edges: ", edges);
+            forceSimulation.nodes(nodes)
+                .on("tick", ticked);
+                //生成边数据
+            forceSimulation.force("link")
+                .links(edges)
+                .distance(function (d) {//每一边的长度
+                    return d.value * 100;
+                })
+            //设置图形的中心位置
+            forceSimulation.force("center")
+                .x(width / 2)
+                .y(height / 2);
+            forceSimulation.restart();
+        })
+</script>
+
+<style>
+.mui-switch {
+  width: 52px;
+  height: 31px;
+  position: relative;
+  border: 1px solid #dfdfdf;
+  background-color: #fdfdfd;
+  box-shadow: #dfdfdf 0 0 0 0 inset;
+  border-radius: 20px;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  background-clip: content-box;
+  display: inline-block;
+  -webkit-appearance: none;
+  user-select: none;
+  outline: none; }
+  .mui-switch:before {
+    content: '';
+    width: 29px;
+    height: 29px;
+    position: absolute;
+    top: 0px;
+    left: 0;
+    border-radius: 20px;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+  .mui-switch:checked {
+    border-color: #64bd63;
+    box-shadow: #64bd63 0 0 0 16px inset;
+    background-color: #64bd63; }
+    .mui-switch:checked:before {
+      left: 21px; }
+  .mui-switch.mui-switch-animbg {
+    transition: background-color ease 0.4s; }
+    .mui-switch.mui-switch-animbg:before {
+      transition: left 0.3s; }
+    .mui-switch.mui-switch-animbg:checked {
+      box-shadow: #dfdfdf 0 0 0 0 inset;
+      background-color: #64bd63;
+      transition: border-color 0.4s, background-color ease 0.4s; }
+      .mui-switch.mui-switch-animbg:checked:before {
+        transition: left 0.3s; }
+  .mui-switch.mui-switch-anim {
+    transition: border cubic-bezier(0, 0, 0, 1) 0.4s, box-shadow cubic-bezier(0, 0, 0, 1) 0.4s; }
+    .mui-switch.mui-switch-anim:before {
+      transition: left 0.3s; }
+    .mui-switch.mui-switch-anim:checked {
+      box-shadow: #64bd63 0 0 0 16px inset;
+      background-color: #64bd63;
+      transition: border ease 0.4s, box-shadow ease 0.4s, background-color ease 1.2s; }
+      .mui-switch.mui-switch-anim:checked:before {
+        transition: left 0.3s; }
+ 
+/*# sourceMappingURL=mui-switch.css.map */
+</style>

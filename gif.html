@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script> -->
+  <script src="d3/d3.js", charset="utf-8"></script>
+  <script src="save-png.js"></script>
+  <script src='./gif.js'></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
+  <title>GIF工具</title>
+</head>
+<body>
+    <div style="width:50%;float: left;">
+        <!-- <img width=200px height=200px src="" id='uploadPreview'> -->
+        <!-- <canvas width='400' height='300' id='canvas'></canvas> -->
+        <div id="img_list" style="width: 600px;height:150px;"></div>
+        <div>
+            <label class="fileLabel" for="file">选择图片</label>
+            <input type='file' style="display: none" id="file" multiple="multiple">
+        </div>
+        <div>
+            <label style='color:rgb(41, 34, 34)'>Enter Interval</label>
+            <input type='interval' id='interval'>
+        </div>
+        <button onclick="generateGIF()">生成GIF</button>
+        <!-- <button onclick="downloadGIF()" id="downloadGIF">下载GIF</button> -->
+        <img width=200px height=200px src='' id='output'>
+    </div>
+</body>
+
+<script>
+    let gifData;
+    let fileInput = document.getElementById('file');
+    fileInput.onchange = function(){
+        if (this.files.length === 0) { return; }
+
+        // let oFile = this.files[0];
+        console.log(this.files)
+        const rFilter = /^(?:image\/bmp|image\/webp|image\/cis\-cod|image\/gif|image\/ief|image\/jpeg|image\/jpeg|image\/jpeg|image\/pipeg|image\/png|image\/svg\+xml|image\/tiff|image\/x\-cmu\-raster|image\/x\-cmx|image\/x\-icon|image\/x\-portable\-anymap|image\/x\-portable\-bitmap|image\/x\-portable\-graymap|image\/x\-portable\-pixmap|image\/x\-rgb|image\/x\-xbitmap|image\/x\-xpixmap|image\/x\-xwindowdump)$/i;
+        for (var i = 0; i < this.files.length; i++) {
+            console.log(this.files[i]);
+            console.log(this.files[i].type);
+            if (!rFilter.test(this.files[i].type)) { 
+                alert("You must select a valid image file!"); return; 
+            }
+            let oFReader = new FileReader();
+            oFReader.readAsDataURL(this.files[i]);
+            oFReader.onload = function (oFREvent) {
+                // let uploadImg = document.getElementById("uploadPreview");
+                // console.log(oFREvent.target.result);
+                // uploadImg.src = oFREvent.target.result;
+                var parent = document.getElementById("img_list");
+                var image = document.createElement("img");
+                // image.width = 150;
+                // image.height = 150;
+                image.src = oFREvent.target.result;
+                parent.appendChild(image);
+            }
+        }
+    }
+
+    function generateGIF() {
+        console.log("Generating...");
+        var gif = new GIF({
+            workers: 2,
+            quality: 5,
+            workerScript: './gif.worker.js',
+        });
+        
+        let img_list = document.getElementById("img_list").getElementsByTagName("img");
+        console.log(img_list)
+        var arr = Array.prototype.slice.call( img_list )
+        console.log(arr);
+        arr.map(item => {
+            console.log(item)
+            gif.addFrame(item, {delay: 1000});
+        });
+
+        gif.render();
+
+        gif.on('finished', function(blob) {
+            // window.open(URL.createObjectURL(blob));
+            let url = URL.createObjectURL(blob)
+            console.log(url)
+            gifData = blob
+            console.log(blob)
+            document.getElementById("output").src = url
+        });
+        // gif.render();
+    }
+</script>
